@@ -52,8 +52,6 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  std::vector<unsigned char> R, G, B;
-
   // Naive approach to HSL->RGB derived from Wikipedia description:
   // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
 
@@ -63,6 +61,8 @@ int main(int argc, char* argv[])
   double stepHue = 360.0 / static_cast<double>(width),
          stepLightness = 1.0 / static_cast<double>(height);
 
+  std::vector<unsigned char> image;
+  image.reserve(width * height * 4);
   for (int i = 0; i < height; ++i) {
     
     double hue = 0.0;
@@ -104,28 +104,16 @@ int main(int argc, char* argv[])
 
       double m = lightness - (chroma * 0.5);
 
-      R.push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
-      G.push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
-      B.push_back(static_cast<unsigned char>(((b + m) * 255.0) + 0.5));
+      image.push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
+      image.push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
+      image.push_back(static_cast<unsigned char>(((b + m) * 255.0) + 0.5));
+      image.push_back(255);
 
       hue += stepHue;
 
     }
 
     lightness -= stepLightness;
-
-  }
-
-  int pixels = width * height;
-
-  std::vector<unsigned char> image;
-  image.reserve(pixels * 4);
-  for (int i = 0; i < pixels; ++i) {
-
-    image.push_back(R[i]);
-    image.push_back(G[i]);
-    image.push_back(B[i]);
-    image.push_back(255);
 
   }
 
