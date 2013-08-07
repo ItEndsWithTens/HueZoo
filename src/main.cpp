@@ -25,75 +25,11 @@
 #include <cmath>
 #include <cstdlib>
 
-#include <fstream>
-#include <ios>
 #include <iostream>
 #include <string>
 #include <vector>
 
-
-
-typedef struct
-{
-
-  short int magic; // IRIS image file magic number, 474
-  char storage; // Storage format, 0=verbatim, 1=RLE
-  char bpc; // Bytes per component
-  unsigned short int dimension; // Number of dimensions (3 for RGB, RGBA)
-  unsigned short int xsize; // Width, in pixels
-  unsigned short int ysize; // Height, in pixels
-  unsigned short int zsize; // Number of channels (3 for RGB, 4 for RGBA)
-  unsigned int pixmin; // Minimum pixel value
-  unsigned int pixmax; // Maximum pixel value
-  unsigned char dummy4[4]; // Ignored
-  char* imagename[80];
-  unsigned int colormap; // Colormap ID
-  unsigned char dummy404[404]; // Ignored
-
-} SGI_HDR;
-
-
-
-void WriteChar(std::ofstream* outfile, unsigned char val)
-{
-
-  unsigned char buf[1];
-
-  buf[0] = static_cast<unsigned char>(val);
-
-  outfile->write((const char*)&buf[0], 1);
-
-}
-
-
-
-void WriteShort(std::ofstream* outfile, unsigned short val)
-{
-
-  unsigned char buf[2];
-
-  buf[0] = static_cast<unsigned char>(val >> 8);
-  buf[1] = static_cast<unsigned char>(val);
-
-  outfile->write((const char*)&buf[0], 2);
-
-}
-
-
-
-void WriteInt(std::ofstream* outfile, unsigned int val)
-{
-
-  unsigned char buf[4];
-
-  buf[0] = static_cast<unsigned char>(val >> 24);
-  buf[1] = static_cast<unsigned char>(val >> 16);
-  buf[2] = static_cast<unsigned char>(val >> 8);
-  buf[3] = static_cast<unsigned char>(val);
-
-  outfile->write((const char*)&buf[0], 4);
-
-}
+#include "lodepng/lodepng.h"
 
 
 
@@ -116,35 +52,22 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  SGI_HDR hdr;
-  hdr.magic = 474;
-  hdr.storage = 0;
-  hdr.bpc = 1;
-  hdr.dimension = 3;
-  hdr.xsize = width;
-  hdr.ysize = height;
-  hdr.zsize = 3;
-  hdr.pixmin = 0;
-  hdr.pixmax = 255;
-  hdr.colormap = 0;
-
-
   std::vector<unsigned char> R, G, B;
 
   // Naive approach to HSL->RGB derived from Wikipedia description:
   // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
 
   double saturation = 1.0,
-         lightness = 0.0;
+         lightness = 1.0;
 
-  double stepHue = 360.0 / static_cast<double>(hdr.xsize),
-         stepLightness = 1.0 / static_cast<double>(hdr.ysize);
+  double stepHue = 360.0 / static_cast<double>(width),
+         stepLightness = 1.0 / static_cast<double>(height);
 
-  for (int i = 0; i < hdr.ysize; ++i) {
+  for (int i = 0; i < height; ++i) {
     
     double hue = 0.0;
 
-    for (int j = 0; j < hdr.xsize; ++j) {
+    for (int j = 0; j < width; ++j) {
 
       double chroma = (1.0 - std::abs((2.0 * lightness) - 1.0)) * saturation;
 
@@ -189,47 +112,30 @@ int main(int argc, char* argv[])
 
     }
 
-    lightness += stepLightness;
+    lightness -= stepLightness;
 
   }
 
-
-  std::ofstream out(outfile.c_str(), std::ios::binary | std::ios::out);
-  if (!out) {
-    std::cout << "Couldn't create " << outfile << "!" << std::endl;
-    return -1;
-  }
-
-  WriteShort(&out, hdr.magic);
-  WriteChar(&out, hdr.storage);
-  WriteChar(&out, hdr.bpc);
-  WriteShort(&out, hdr.dimension);
-  WriteShort(&out, hdr.xsize);
-  WriteShort(&out, hdr.ysize);
-  WriteShort(&out, hdr.zsize);
-  WriteInt(&out, hdr.pixmin);
-  WriteInt(&out, hdr.pixmax);
-  for (int i = 0; i < 4; ++i) // dummy4
-    WriteChar(&out, 0);
-  for (int i = 0; i < 80; ++i) // imagename
-    WriteChar(&out, 0);
-  WriteInt(&out, hdr.colormap);
-  for (int i = 0; i < 404; ++i) // dummy404
-    WriteChar(&out, 0);
-
+  int pixels = width * height;
 
   std::vector<unsigned char> image;
-  image.reserve(hdr.xsize * hdr.ysize * hdr.dimension);
+  image.reserve(pixels * 4);
+  for (int i = 0; i < pixels; ++i) {
 
-  for (std::vector<unsigned char>::iterator i = R.begin(); i != R.end(); ++i)
-    image.push_back(*i);
-  for (std::vector<unsigned char>::iterator i = G.begin(); i != G.end(); ++i)
-    image.push_back(*i);
-  for (std::vector<unsigned char>::iterator i = B.begin(); i != B.end(); ++i)
-    image.push_back(*i);
+    image.push_back(R[i]);
+    image.push_back(G[i]);
+    image.push_back(B[i]);
+    image.push_back(255);
 
-  out.write((const char*)image.data(), hdr.xsize * hdr.ysize * hdr.dimension);
-  out.close();
+  }
+
+  unsigned int err = lodepng::encode(outfile, image.data(), width, height);
+
+  if (err) {
+    std::cout << "LodePNG error " << err << ": " <<
+    lodepng_error_text(err) << std::endl;
+    return -1;
+  }
 
   return 0;
 
