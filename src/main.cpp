@@ -39,17 +39,33 @@ int main(int argc, char* argv[])
   int width = 512,
       height = 512;
 
-  std::string outfile;
+  std::string outfile = "hsl.png";
 
-  if (argc == 4) {
-    width = std::atoi(argv[1]);
-    height = std::atoi(argv[2]);
-    outfile = argv[3];
-  } else if (argc == 2) {
-    outfile = argv[1];
-  } else {
-    std::cout << "Usage: huezoo [width height] filename" << std::endl;
-    return -1;
+  for (int i = 0; i < argc; ++i) {
+
+    std::string arg = argv[i];
+
+    if (arg == "--help" || argc % 2 == 0) {
+
+      std::cout <<
+        "Usage: huezoo [--help] [-w <width>] [-h <height>] [-o <outfile>]" <<
+        std::endl;
+      return -1;
+
+    } else if (arg == "-w" || arg == "--width") {
+
+      width = std::atoi(argv[i+1]);
+
+    } else if (arg == "-h" || arg == "--height") {
+
+      height = std::atoi(argv[i+1]);
+
+    } else if (arg == "-o" || arg == "--outfile") {
+
+      outfile = argv[i+1];
+
+    }
+
   }
 
   // Naive approach to HSL->RGB derived from Wikipedia description:
