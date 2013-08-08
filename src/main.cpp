@@ -65,15 +65,14 @@ int main(int argc, char* argv[])
   image.reserve(width * height * 4);
   for (int i = 0; i < height; ++i) {
     
-    double hue = 0.0;
+    double hue = 0.0,
+           chroma = (1.0 - std::abs((2.0 * lightness) - 1.0)) * saturation,
+           m = lightness - (chroma * 0.5);
 
     for (int j = 0; j < width; ++j) {
 
-      double chroma = (1.0 - std::abs((2.0 * lightness) - 1.0)) * saturation;
-
-      double col = hue / 60.0;
-
-      double x = chroma * (1.0 - std::abs(std::fmod(col, 2.0) - 1.0));
+      double col = hue / 60.0,
+             x = chroma * (1.0 - std::abs(std::fmod(col, 2.0) - 1.0));
 
       double r = 0.0, g = 0.0, b = 0.0;
       if (col >= 0.0 && col < 1.0) {
@@ -101,8 +100,6 @@ int main(int argc, char* argv[])
         g = 0.0;
         b = x;
       }
-
-      double m = lightness - (chroma * 0.5);
 
       image.push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
       image.push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
