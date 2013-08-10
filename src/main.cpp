@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
   int width = 512,
       height = 512;
 
+  double saturation = 1.0;
+
   std::string outfile = "hsl.png";
 
   for (int i = 0; i < argc; ++i) {
@@ -48,8 +50,8 @@ int main(int argc, char* argv[])
     if (arg == "--help" || argc % 2 == 0) {
 
       std::cout <<
-        "Usage: huezoo [--help] [-w <width>] [-h <height>] [-o <outfile>]" <<
-        std::endl;
+        "Usage: huezoo [--help] [-w <width>] [-h <height>] [-s <saturation>] "
+        "[-o <outfile>]" << std::endl;
       return -1;
 
     } else if (arg == "-w" || arg == "--width") {
@@ -59,6 +61,10 @@ int main(int argc, char* argv[])
     } else if (arg == "-h" || arg == "--height") {
 
       height = std::atoi(argv[i+1]);
+
+    } else if (arg == "-s" || arg == "--saturation") {
+
+      saturation = std::atof(argv[i+1]);
 
     } else if (arg == "-o" || arg == "--outfile") {
 
@@ -71,8 +77,7 @@ int main(int argc, char* argv[])
   // Naive approach to HSL->RGB derived from Wikipedia description:
   // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
 
-  double saturation = 1.0,
-         lightness = 1.0;
+  double lightness = 1.0;
 
   double stepHue = 360.0 / static_cast<double>(width),
          stepLightness = 1.0 / static_cast<double>(height);
