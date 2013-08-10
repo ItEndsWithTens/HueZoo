@@ -22,9 +22,11 @@
 
 
 
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -100,6 +102,73 @@ void PlotHsl(
 
 
 
+void PlotHsv(
+  std::vector<unsigned char>* image, int width, int height, double saturation)
+{
+
+  // Naive approach to HSV->RGB derived from Wikipedia description:
+  // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
+
+  double value = 1.0;
+
+  double stepHue = 360.0 / static_cast<double>(width),
+         stepValue = 1.0 / static_cast<double>(height);
+
+  for (int i = 0; i < height; ++i) {
+    
+    double hue = 0.0,
+           chroma = value * saturation,
+           m = value - chroma;
+
+    for (int j = 0; j < width; ++j) {
+
+      double hPrime = hue / 60.0,
+             x = chroma * (1.0 - std::abs(std::fmod(hPrime, 2.0) - 1.0));
+
+      double r = 0.0, g = 0.0, b = 0.0;
+      if (hPrime >= 0.0 && hPrime < 1.0) {
+        r = chroma;
+        g = x;
+        b = 0.0;
+      } else if (hPrime >= 1.0 && hPrime < 2.0) {
+        r = x;
+        g = chroma;
+        b = 0.0;
+      } else if (hPrime >= 2.0 && hPrime < 3.0) {
+        r = 0.0;
+        g = chroma;
+        b = x;
+      } else if (hPrime >= 3.0 && hPrime < 4.0) {
+        r = 0.0;
+        g = x;
+        b = chroma;
+      } else if (hPrime >= 4.0 && hPrime < 5.0) {
+        r = x;
+        g = 0.0;
+        b = chroma;
+      } else if (hPrime >= 5.0 && hPrime < 6.0) {
+        r = chroma;
+        g = 0.0;
+        b = x;
+      }
+
+      image->push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
+      image->push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
+      image->push_back(static_cast<unsigned char>(((b + m) * 255.0) + 0.5));
+      image->push_back(255);
+
+      hue += stepHue;
+
+    }
+
+    value -= stepValue;
+
+  }
+
+}
+
+
+
 int main(int argc, char* argv[])
 {
 
@@ -108,7 +177,8 @@ int main(int argc, char* argv[])
 
   double saturation = 1.0;
 
-  std::string outfile = "hsl.png";
+  std::string mode = "HSL",
+              outfile = "";
 
   for (int i = 0; i < argc; ++i) {
 
@@ -117,8 +187,8 @@ int main(int argc, char* argv[])
     if (arg == "--help" || argc % 2 == 0) {
 
       std::cout <<
-        "Usage: huezoo [--help] [-w <width>] [-h <height>] [-s <saturation>] "
-        "[-o <outfile>]" << std::endl;
+        "Usage: huezoo [--help] [-w <width>] [-h <height>] [-m <mode>] "
+        "[-s <saturation>] [-o <outfile>]" << std::endl;
       return -1;
 
     } else if (arg == "-w" || arg == "--width") {
@@ -128,6 +198,11 @@ int main(int argc, char* argv[])
     } else if (arg == "-h" || arg == "--height") {
 
       height = std::atoi(argv[i+1]);
+
+    } else if (arg == "-m" || arg == "--mode") {
+
+      mode = argv[i+1];
+      std::transform(mode.begin(), mode.end(), mode.begin(), ::toupper);
 
     } else if (arg == "-s" || arg == "--saturation") {
 
@@ -141,10 +216,20 @@ int main(int argc, char* argv[])
 
   }
 
+  if (outfile == "") {
+    if (mode == "HSV")
+      outfile = "hsv.png";
+    else
+      outfile = "hsl.png";
+  }
+
   std::vector<unsigned char> image;
   image.reserve(width * height * 4);
 
-  PlotHsl(&image, width, height, saturation);
+  if (mode == "HSV")
+    PlotHsv(&image, width, height, saturation);
+  else
+    PlotHsl(&image, width, height, saturation);
 
   unsigned int err = lodepng::encode(outfile, image.data(), width, height);
 
