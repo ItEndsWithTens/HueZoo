@@ -33,6 +33,73 @@
 
 
 
+void PlotHsl(
+  std::vector<unsigned char>* image, int width, int height, double saturation)
+{
+
+  // Naive approach to HSL->RGB derived from Wikipedia description:
+  // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
+
+  double lightness = 1.0;
+
+  double stepHue = 360.0 / static_cast<double>(width),
+         stepLightness = 1.0 / static_cast<double>(height);
+
+  for (int i = 0; i < height; ++i) {
+    
+    double hue = 0.0,
+           chroma = (1.0 - std::abs((2.0 * lightness) - 1.0)) * saturation,
+           m = lightness - (chroma * 0.5);
+
+    for (int j = 0; j < width; ++j) {
+
+      double col = hue / 60.0,
+             x = chroma * (1.0 - std::abs(std::fmod(col, 2.0) - 1.0));
+
+      double r = 0.0, g = 0.0, b = 0.0;
+      if (col >= 0.0 && col < 1.0) {
+        r = chroma;
+        g = x;
+        b = 0.0;
+      } else if (col >= 1.0 && col < 2.0) {
+        r = x;
+        g = chroma;
+        b = 0.0;
+      } else if (col >= 2.0 && col < 3.0) {
+        r = 0.0;
+        g = chroma;
+        b = x;
+      } else if (col >= 3.0 && col < 4.0) {
+        r = 0.0;
+        g = x;
+        b = chroma;
+      } else if (col >= 4.0 && col < 5.0) {
+        r = x;
+        g = 0.0;
+        b = chroma;
+      } else if (col >= 5.0 && col < 6.0) {
+        r = chroma;
+        g = 0.0;
+        b = x;
+      }
+
+      image->push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
+      image->push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
+      image->push_back(static_cast<unsigned char>(((b + m) * 255.0) + 0.5));
+      image->push_back(255);
+
+      hue += stepHue;
+
+    }
+
+    lightness -= stepLightness;
+
+  }
+
+}
+
+
+
 int main(int argc, char* argv[])
 {
 
@@ -74,66 +141,10 @@ int main(int argc, char* argv[])
 
   }
 
-  // Naive approach to HSL->RGB derived from Wikipedia description:
-  // http://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
-
-  double lightness = 1.0;
-
-  double stepHue = 360.0 / static_cast<double>(width),
-         stepLightness = 1.0 / static_cast<double>(height);
-
   std::vector<unsigned char> image;
   image.reserve(width * height * 4);
-  for (int i = 0; i < height; ++i) {
-    
-    double hue = 0.0,
-           chroma = (1.0 - std::abs((2.0 * lightness) - 1.0)) * saturation,
-           m = lightness - (chroma * 0.5);
 
-    for (int j = 0; j < width; ++j) {
-
-      double col = hue / 60.0,
-             x = chroma * (1.0 - std::abs(std::fmod(col, 2.0) - 1.0));
-
-      double r = 0.0, g = 0.0, b = 0.0;
-      if (col >= 0.0 && col < 1.0) {
-        r = chroma;
-        g = x;
-        b = 0.0;
-      } else if (col >= 1.0 && col < 2.0) {
-        r = x;
-        g = chroma;
-        b = 0.0;
-      } else if (col >= 2.0 && col < 3.0) {
-        r = 0.0;
-        g = chroma;
-        b = x;
-      } else if (col >= 3.0 && col < 4.0) {
-        r = 0.0;
-        g = x;
-        b = chroma;
-      } else if (col >= 4.0 && col < 5.0) {
-        r = x;
-        g = 0.0;
-        b = chroma;
-      } else if (col >= 5.0 && col < 6.0) {
-        r = chroma;
-        g = 0.0;
-        b = x;
-      }
-
-      image.push_back(static_cast<unsigned char>(((r + m) * 255.0) + 0.5));
-      image.push_back(static_cast<unsigned char>(((g + m) * 255.0) + 0.5));
-      image.push_back(static_cast<unsigned char>(((b + m) * 255.0) + 0.5));
-      image.push_back(255);
-
-      hue += stepHue;
-
-    }
-
-    lightness -= stepLightness;
-
-  }
+  PlotHsl(&image, width, height, saturation);
 
   unsigned int err = lodepng::encode(outfile, image.data(), width, height);
 
