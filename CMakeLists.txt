@@ -32,3 +32,57 @@ if(WIN32)
 endif()
 
 add_executable(${PROJECT_NAME} ${SRCS})
+
+
+
+### Packaging options ###
+
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+
+set(CPACK_SOURCE_IGNORE_FILES
+  # Directories
+  "\\\\.git"
+  "build"
+  "scratch"
+  # Project files
+  "gitignore$"
+  # Source
+  "\\\\.rc$"
+  "~$"
+  # Packages
+  "zip$"
+)
+
+install(
+  TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION .
+  PERMISSIONS
+    OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE
+)
+
+install(FILES README.txt DESTINATION .)
+
+# Build the source package by changing to your build directory and
+# running: cpack --config CPackSourceConfig.cmake
+set(CPACK_SOURCE_GENERATOR "ZIP")
+if(WIN32)
+  set(CPACK_GENERATOR "ZIP")
+else()
+  set(CPACK_GENERATOR "TGZ")
+endif()
+set(CPACK_OUTPUT_FILE_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/dist)
+
+set(CPACK_PACKAGE_VERSION_MAJOR ${HUEZOO_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${HUEZOO_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${HUEZOO_PATCH})
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+  set(HUEZOO_ARCH x64)
+else()
+  set(HUEZOO_ARCH x86)
+endif()
+
+set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME}-${CMAKE_SYSTEM_NAME}-${HUEZOO_ARCH})
+
+include(CPack)
