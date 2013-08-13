@@ -27,6 +27,29 @@ if(WIN32)
     source_group("Resource Files" FILES src/HueZoo.rc)
     set_property(SOURCE src/lodepng/lodepng.cpp
       PROPERTY COMPILE_DEFINITIONS _CRT_SECURE_NO_DEPRECATE)
+      
+    option(
+      HUEZOO_STATIC_CRT "Link statically with the C Run-Time libraries." TRUE
+    )
+  
+    if(HUEZOO_STATIC_CRT)
+      
+      foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+        string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+      endforeach()
+      
+    else()
+    
+      foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+        string(REPLACE "/MT" "/MD" ${flag_var} "${${flag_var}}")
+      endforeach()
+      
+    endif()
+  
   endif()
   
 endif()
